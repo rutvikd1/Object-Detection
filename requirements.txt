@@ -1,0 +1,9 @@
+Cython==0.29.21
+jupyter==1.0.0
+matplotlib==3.0.3
+Pillow==7.2.0
+ray==2.44.1
+nuscenes-devkit==1.1.11
+
+# mmengine==0.10.7
+# mmcv==1.7.1

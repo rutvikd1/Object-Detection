@@ -1,0 +1,6 @@
+*.ipynb_checkpoints/
+.devcontainer
+*.index
+checkpoint
+*.pb
+*.deb
