@@ -2,21 +2,23 @@
 ARG UBUNTU_VERSION=22.04
 
 ARG ARCH=
-ARG CUDA=12.8
+ARG CUDA=12.2
 FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}.1-base-ubuntu${UBUNTU_VERSION} AS base
 # FROM nvidia/cuda:12.8.0-cudnn-runtime-ubuntu22.04
+
+#if needed
+# RUN apt install nvidia-driver-570
 
 # ARCH and CUDA are specified again because the FROM directive resets ARGs
 # (but their default value is retained if set previously)
 ARG ARCH
 ARG CUDA
-ARG CUDNN=9.8.0.0-1
-# 8.1.0.77-1
-ARG CUDNN_MAJOR_VERSION=9
+ARG CUDNN=8.9.0.0-1
+ARG CUDNN_MAJOR_VERSION=8
 ARG LIB_DIR_PREFIX=x86_64
-ARG LIBNVINFER=9.0.0-1
-ARG LIBNVINFER_MAJOR_VERSION=9
-ARG CUDA_DASHED=12-8
+ARG LIBNVINFER=8.0.0-1
+ARG LIBNVINFER_MAJOR_VERSION=8
+ARG CUDA_DASHED=12-2
 
 # Let us install tzdata painlessly
 ENV DEBIAN_FRONTEND=noninteractive
@@ -91,15 +93,12 @@ RUN apt update -y && \
 RUN ln -s $(which python3) /usr/local/bin/python
 
 # Pin TF models official version
+RUN pip uninstall tensorflow -y
 RUN python -m pip install --upgrade pip && \
-    pip install tensorflow==2.12.0 tf-models-official==2.5.1 tensorflow_io==0.32.0 pyparsing==2.4.2 pycairo
-    
+    pip install tensorflow==2.15.1 tf-models-official==2.5.0 tensorflow_io==0.36.0 pyparsing==2.4.2 pycairo
+
+# RUN  
 WORKDIR /app
-# COPY . /app
-
-# ARG APP_DIR
-# RUN --mount=type=bind,source=$(APP_DIR),target=/app
-
 
 # Install requirements, cocoAPI
 COPY requirements.txt .
@@ -112,12 +111,15 @@ ENV TF_CPP_MIN_LOG_LEVEL=2
 # Install protocol buffer
 RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v3.13.0/protoc-3.13.0-linux-x86_64.zip && \
     unzip protoc-3.13.0-linux-x86_64.zip -d /app/protobuf/
+# RUN pip install protobuf==3.20
 
 ENV PATH="$PATH:/app/protobuf/bin"
 
 # Clone tensorflow models repository , install object detection API and 
 RUN git clone https://github.com/tensorflow/models.git && \
-cd /app/models/research/ && \
+    sed -i 's/tf-models-official>=2.5.1/tf-models-official==2.15.0/g' ./models/research/object_detection/packages/tf2/setup.py
+
+RUN cd /app/models/research/ && \
 protoc object_detection/protos/*.proto --python_out=. && \
 cp object_detection/packages/tf2/setup.py . && \
 python -m pip install .
@@ -127,29 +129,7 @@ RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcl && bash /tmp/gcl --install
 ENV PATH="$PATH:/root/gcloud/google-cloud-sdk/bin"
 
 RUN ldconfig
-RUN pip uninstall keras -y
-RUN pip install keras==2.5.0rc0
-
-
-
-# # RUN pip install -r requirements.txt
-
-# RUN apt-get update && \
-#     apt-get install -y --no-install-recommends \
-#     build-essential
-
-
-# RUN pip install tensorflow
-
-# RUN apt-get install protobuf-compiler python-pil python-lxml
-# RUN pip install jupyter
-# RUN pip install matplotlib
-
-# RUN git clone https://github.com/tensorflow/models.git /tensorflow/models
-
-# WORKDIR /tensorflow/models/research
-
-# RUN protoc object_detection/protos/*.proto --python_out=.
+RUN pip install notebook
 
 # RUN export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
 
@@ -159,7 +139,4 @@ RUN pip install keras==2.5.0rc0
 # EXPOSE 8888
 
 # CMD ["jupyter", "notebook", "--allow-root", "--notebook-dir=/tensorflow/models/research/object_detection", "--ip=0.0.0.0", "--port=8888", "--no-browser"]
-
-
-
 
