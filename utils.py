@@ -8,6 +8,22 @@ from object_detection.utils.config_util import get_configs_from_pipeline_file
 # from waymo_open_dataset import dataset_pb2 as open_dataset
 
 
+# def get_dataset(tfrecord_path, label_map='label_map.pbtxt'):
+#     """
+#     Opens a tf record file and create tf dataset
+#     args:
+#       - tfrecord_path [str]: path to a tf record file
+#       - label_map [str]: path the label_map file
+#     returns:
+#       - dataset [tf.Dataset]: tensorflow dataset
+#     """
+#     input_config = input_reader_pb2.InputReader()
+#     input_config.label_map_path = label_map
+#     input_config.tf_record_input_reader.input_path[:] = [tfrecord_path]
+    
+#     dataset = build_dataset(input_config)
+#     return dataset
+
 def get_dataset(tfrecord_path, label_map='label_map.pbtxt'):
     """
     Opens a tf record file and create tf dataset
@@ -17,12 +33,27 @@ def get_dataset(tfrecord_path, label_map='label_map.pbtxt'):
     returns:
       - dataset [tf.Dataset]: tensorflow dataset
     """
-    input_config = input_reader_pb2.InputReader()
-    input_config.label_map_path = label_map
-    input_config.tf_record_input_reader.input_path[:] = [tfrecord_path]
-    
-    dataset = build_dataset(input_config)
+
+    num_parallel_reads=tf.data.AUTOTUNE
+    dataset = tf.data.TFRecordDataset(tfrecord_path, num_parallel_reads=num_parallel_reads)
+    dataset = dataset.map(parse_function, num_parallel_calls=tf.data.AUTOTUNE)
     return dataset
+
+def parse_function(example):
+    features = {
+        'image/encoded': tf.io.FixedLenFeature([], tf.string),
+        'image/source_id': tf.io.FixedLenFeature([], tf.string),
+        'image/height': tf.io.FixedLenFeature([], tf.int64),
+        'image/width': tf.io.FixedLenFeature([], tf.int64),
+        'image/object/bbox/xmin': tf.io.VarLenFeature(tf.float32),
+        'image/object/bbox/xmax': tf.io.VarLenFeature(tf.float32),
+        'image/object/bbox/ymin': tf.io.VarLenFeature(tf.float32),
+        'image/object/bbox/ymax': tf.io.VarLenFeature(tf.float32),
+        'image/object/class/label': tf.io.VarLenFeature(tf.int64),
+    }
+    parsed_example = tf.io.parse_single_example(example, features)
+    return parsed_example
+
 
 
 def get_module_logger(mod_name):
