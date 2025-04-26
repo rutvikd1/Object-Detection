@@ -11,9 +11,8 @@ from nuimages import NuImages
 import numpy as np
 # from waymo_open_dataset import dataset_pb2 as open_dataset
 
-from .utils import (get_module_logger, int64_feature, int64_list_feature,
-                bytes_list_feature, bytes_feature, float_list_feature)   #parse_frame,
-
+from utils import (get_module_logger, int64_feature, int64_list_feature,
+                bytes_list_feature, bytes_feature, float_list_feature)  
 
 NAME_MAPPING = {
     'movable_object.barrier': 'barrier',
@@ -151,7 +150,6 @@ def process_tfr(nuim,token,path):
     writer.close()
 
 
-
 def get_file_name(nuim,token):
     """
     select path of a single image for processing
@@ -180,8 +178,9 @@ def download_and_process(nuim, token):
     # need to re-import the logger because of multiprocesing
     local_path = get_file_name(nuim,token)
     process_tfr(nuim, token,local_path)
+
     # remove the original tf record to save space
-    logger.info(f'Deleting {local_path}')
+    # logger.info(f'Deleting {local_path}')
     # os.remove(local_path)
 
 
