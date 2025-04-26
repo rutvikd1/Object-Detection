@@ -11,7 +11,7 @@ from nuimages import NuImages
 import numpy as np
 # from waymo_open_dataset import dataset_pb2 as open_dataset
 
-from utils import (get_module_logger, int64_feature, int64_list_feature,
+from .utils import (get_module_logger, int64_feature, int64_list_feature,
                 bytes_list_feature, bytes_feature, float_list_feature)   #parse_frame,
 
 
@@ -51,7 +51,7 @@ def create_tf_example(nuim, filename, encoded_jpeg, token, resize=True): #(filen
     returns:
         - tf_example [tf.Train.Example]: tf example in the objection detection api format.
     """
-    data_dir = nuim.dataroot
+    # data_dir = nuim.dataroot
     if not resize:
         encoded_jpg_io = io.BytesIO(encoded_jpeg)
         image = Image.open(encoded_jpg_io)
@@ -85,8 +85,6 @@ def create_tf_example(nuim, filename, encoded_jpeg, token, resize=True): #(filen
             
         bboxes = nuim.get('object_ann', bboxes_tokens[j])['bbox']
         # print(f"bboxes are {bboxes}\n and the elements are {bboxes[0]}")
-        # order = [1,0,3,2]   
-        # scaled_boxes = [bboxes[i] for i in order]
         bboxes[1] *= height_factor  # ymin
         bboxes[3] *= height_factor  # ymax
         bboxes[0] *= width_factor  # xmin
@@ -105,8 +103,6 @@ def create_tf_example(nuim, filename, encoded_jpeg, token, resize=True): #(filen
             ymaxs.append(bboxes[3])
             classes.append(mapping[nus_cat])
             classes_text.append(nus_cat.encode('utf8'))
-    # return boxes, labels
-
 
     tf_example = tf.train.Example(features=tf.train.Features(feature={
         'image/height': int64_feature(height),
@@ -148,19 +144,7 @@ def process_tfr(nuim,token,path):
     writer = tf.python_io.TFRecordWriter(filename)
     dataset = tf.data.TFRecordDataset(path, compression_type='')
 
-    # for idx, data in enumerate(dataset):
-    #     # we are only saving every 10 frames to reduce the number of similar
-    #     # images. Remove this line if you have enough space to work with full
-    #     # temporal resolution data.
-    #     if idx % 3 == 0:
-    #         frame = open_dataset.Frame()
-    
-    # frame.ParseFromString(bytearray(data.numpy()))
-    # encoded_jpeg, annotations = parse_frame(frame)
-
-    # filename = file_name.replace('.tfrecord', f'_{idx}.tfrecord')
     encoded_jpeg = open(path, 'rb').read()
-    # annotations = nuim.get('sample_data', token)['annotations']
     
     tf_example = create_tf_example(nuim, file_name, encoded_jpeg, token)#, annotations)
     writer.write(tf_example.SerializeToString())
