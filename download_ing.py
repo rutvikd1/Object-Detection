@@ -139,7 +139,7 @@ def process_tfr(nuim,token,path):
     print(f"the filename in process_tfr is {file_name}")
     logger.info(f'Processing {path}')
 
-    filename = os.path.join(dest , os.path.basename(file_name).replace('.jpg','.tfrecords'))
+    filename = os.path.join(dest , os.path.basename(file_name).replace('.jpg','.tfrecord'))
     writer = tf.python_io.TFRecordWriter(filename)
     dataset = tf.data.TFRecordDataset(path, compression_type='')
 
