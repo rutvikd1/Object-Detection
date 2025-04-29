@@ -2,27 +2,10 @@ import logging
 
 import tensorflow.compat.v1 as tf
 from object_detection.inputs import train_input
-from object_detection.protos import input_reader_pb2
-from object_detection.builders.dataset_builder import build as build_dataset
+# from object_detection.protos import input_reader_pb2
+# from object_detection.builders.dataset_builder import build as build_dataset
 from object_detection.utils.config_util import get_configs_from_pipeline_file
-# from waymo_open_dataset import dataset_pb2 as open_dataset
 
-
-# def get_dataset(tfrecord_path, label_map='label_map.pbtxt'):
-#     """
-#     Opens a tf record file and create tf dataset
-#     args:
-#       - tfrecord_path [str]: path to a tf record file
-#       - label_map [str]: path the label_map file
-#     returns:
-#       - dataset [tf.Dataset]: tensorflow dataset
-#     """
-#     input_config = input_reader_pb2.InputReader()
-#     input_config.label_map_path = label_map
-#     input_config.tf_record_input_reader.input_path[:] = [tfrecord_path]
-    
-#     dataset = build_dataset(input_config)
-#     return dataset
 
 def get_dataset(tfrecord_path, label_map='label_map.pbtxt'):
     """
@@ -33,9 +16,9 @@ def get_dataset(tfrecord_path, label_map='label_map.pbtxt'):
     returns:
       - dataset [tf.Dataset]: tensorflow dataset
     """
-
+    tf_rec_files = tf.io.gfile.glob(tfrecord_path)
     num_parallel_reads=tf.data.AUTOTUNE
-    dataset = tf.data.TFRecordDataset(tfrecord_path, num_parallel_reads=num_parallel_reads)
+    dataset = tf.data.TFRecordDataset(tf_rec_files, num_parallel_reads=num_parallel_reads)
     dataset = dataset.map(parse_function, num_parallel_calls=tf.data.AUTOTUNE)
     return dataset
 
@@ -54,7 +37,20 @@ def parse_function(example):
     parsed_example = tf.io.parse_single_example(example, features)
     return parsed_example
 
+def parse_tfrecord_fn(example):
+    
+    image = tf.image.decode_jpeg(example['image/encoded'], channels=3)
+    width = tf.cast(example['image/width'], tf.float32)
+    height = tf.cast(example['image/height'], tf.float32)
+    # height = tf.sparse.to_dense(example['image/height'])
+    xmin = tf.sparse.to_dense(example['image/object/bbox/xmin'])*width
+    xmax = tf.sparse.to_dense(example['image/object/bbox/xmax'])*width
+    ymin = tf.sparse.to_dense(example['image/object/bbox/ymin'])*height
+    ymax = tf.sparse.to_dense(example['image/object/bbox/ymax'])*height
+    labels = tf.sparse.to_dense(example['image/object/class/label'])
 
+    boxes = tf.stack([ymin,xmin,ymax, xmax], axis=1)
+    return image, boxes, labels
 
 def get_module_logger(mod_name):
     """ simple logger """
@@ -83,38 +79,6 @@ def get_train_input(config_path):
   # get the dataset
   dataset = train_input(train_config, train_input_config, configs['model'])
   return dataset
-
-# def parse_frame(frame, camera_name='FRONT'):
-#     """ 
-#     take a frame, output the bboxes and the image
-
-#     dataset = tf.data.TFRecordDataset(FILENAME, compression_type='')
-#       for data in dataset:
-#       frame = open_dataset.Frame()
-#       frame.ParseFromString(bytearray(data.numpy()))
-    
-#     args:
-#       - frame [waymo_open_dataset.dataset_pb2.Frame]: a waymo frame, contains images and annotations
-#       - camera_name [str]: one frame contains images and annotations for multiple cameras
-    
-#     returns:
-#       - encoded_jpeg [bytes]: jpeg encoded image
-#       - annotations [protobuf object]: bboxes and classes
-#     """
-#     # get image
-#     images = frame.images
-#     for im in images:
-#         if open_dataset.CameraName.Name.Name(im.name) != camera_name:
-#             continue
-#         encoded_jpeg = im.image
-    
-#     # get bboxes
-#     labels = frame.camera_labels
-#     for lab in labels:
-#         if open_dataset.CameraName.Name.Name(lab.name) != camera_name:
-#             continue
-#         annotations = lab.labels
-#     return encoded_jpeg, annotations
 
 
 def int64_feature(value):

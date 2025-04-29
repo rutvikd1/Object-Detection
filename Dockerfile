@@ -98,12 +98,12 @@ RUN ln -s $(which python3) /usr/local/bin/python
 # Pin TF models official version
 RUN pip uninstall tensorflow -y
 RUN python -m pip install --upgrade pip && \
-    pip install tensorflow[and-cuda]==2.15.0 tf-models-official==2.5.0 tensorflow_io==0.36.0 pyparsing==2.4.2 pycairo
+    pip install tensorflow[and-cuda]==2.15.1 tf-models-official==2.5.0 tensorflow_io==0.36.0 pyparsing==2.4.2 pycairo
 
 # RUN  
 WORKDIR /app
 
-# Install requirements, cocoAPI
+# Install requirements, cocoAPI (for evaluation)
 COPY requirements.txt .
 RUN python3 -m pip install -r requirements.txt
 RUN python3 -m pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI
@@ -127,14 +127,14 @@ protoc object_detection/protos/*.proto --python_out=. && \
 cp object_detection/packages/tf2/setup.py . && \
 python -m pip install .
 
-RUN pip install git+https://github.com/google-research/tf-slim.git
-
 # Install google cloud SDK
 RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcl && bash /tmp/gcl --install-dir=~/gcloud --disable-prompts
 ENV PATH="$PATH:/root/gcloud/google-cloud-sdk/bin"
 
 RUN ldconfig
 RUN pip install notebook
+RUN pip install git+https://github.com/google-research/tf-slim.git
+
 
 # RUN export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
 

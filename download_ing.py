@@ -9,7 +9,6 @@ from PIL import Image
 from psutil import cpu_count
 from nuimages import NuImages
 import numpy as np
-# from waymo_open_dataset import dataset_pb2 as open_dataset
 
 from utils import (get_module_logger, int64_feature, int64_list_feature,
                 bytes_list_feature, bytes_feature, float_list_feature)  
@@ -57,7 +56,7 @@ def create_tf_example(nuim, filename, encoded_jpeg, token, resize=True): #(filen
         width, height = image.size
         width_factor, height_factor = image.size
     else:
-        print(f"filename is {filename}")
+        # print(f"filename is {filename}")
         image_tensor = tf.io.decode_jpeg(encoded_jpeg)
         height_img_original, width_img_original, _ = image_tensor.shape
         image_res = tf.cast(tf.image.resize(image_tensor, (640, 640)), tf.uint8)
@@ -91,15 +90,15 @@ def create_tf_example(nuim, filename, encoded_jpeg, token, resize=True): #(filen
         
         label = nuim.get('category', nuim.get('object_ann',bboxes_tokens[j])["category_token"])['name']
         nus_cat = NAME_MAPPING.get(label)
-        print(f"label is {label} and nus_cat is {nus_cat}")
+        # print(f"label is {label} and nus_cat is {nus_cat}")
         if nus_cat in NUS_CATEGORIES_TO_TAKE:
 
             boxes.append(bboxes)
             labels.append(label)
-            xmins.append(bboxes[0])
-            ymins.append(bboxes[1])
-            xmaxs.append(bboxes[2])
-            ymaxs.append(bboxes[3])
+            xmins.append(bboxes[0]/width)
+            ymins.append(bboxes[1]/height)
+            xmaxs.append(bboxes[2]/width)
+            ymaxs.append(bboxes[3]/height)
             classes.append(mapping[nus_cat])
             classes_text.append(nus_cat.encode('utf8'))
 
@@ -136,7 +135,7 @@ def process_tfr(nuim,token,path):
         os.makedirs(dest, exist_ok=True)
     
     file_name = path #os.path.basename(path)
-    print(f"the filename in process_tfr is {file_name}")
+    # print(f"the filename in process_tfr is {file_name}")
     logger.info(f'Processing {path}')
 
     filename = os.path.join(dest , os.path.basename(file_name).replace('.jpg','.tfrecord'))
