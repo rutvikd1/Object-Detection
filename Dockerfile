@@ -1,10 +1,11 @@
-# cannot use higer versions of ubuntu as cuda tfod supports use of cuda 11.2 which is compatible with 20.04
+# build command 
+# docker build -t project-tfod:<version> -f Dockerfile .
+
 ARG UBUNTU_VERSION=22.04
 
 ARG ARCH=
-ARG CUDA=12.2
-FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}.1-base-ubuntu${UBUNTU_VERSION} AS base
-# FROM nvidia/cuda:12.8.0-cudnn-runtime-ubuntu22.04
+ARG CUDA=12.2.2
+FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}-devel-ubuntu${UBUNTU_VERSION} AS base
 
 #if needed
 # RUN apt install nvidia-driver-570
@@ -13,13 +14,16 @@ FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}.1-base-ubuntu${UBUNTU_VERSION} AS base
 # (but their default value is retained if set previously)
 ARG ARCH
 ARG CUDA
-ARG CUDNN=8.9.0.0-1
+ARG CUDNN=8.9
+# .0.0-1
 ARG CUDNN_MAJOR_VERSION=8
+ARG CUDA_MAJOR_VERSION=12
 ARG LIB_DIR_PREFIX=x86_64
-ARG LIBNVINFER=8.0.0-1
+ARG LIBNVINFER=8.6.1-1
 ARG LIBNVINFER_MAJOR_VERSION=8
 ARG CUDA_DASHED=12-2
-
+ARG CUDNN_VERSION=8.9.7
+ARG CUDA_VERSION=cuda12.2
 # Let us install tzdata painlessly
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -36,15 +40,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         vim \
         zip \
         zlib1g-dev \
-        cuda-command-line-tools-${CUDA/./-} \
-        libcublas-${CUDA/./-} \
-        cuda-nvrtc-${CUDA/./-} \
-        libcufft-${CUDA/./-} \
-        libcurand-${CUDA/./-} \
-        libcusolver-${CUDA/./-} \
-        libcusparse-${CUDA/./-} \
+        cuda-command-line-tools-${CUDA_DASHED} \
+        libcublas-${CUDA_DASHED} \
+        cuda-nvrtc-${CUDA_DASHED} \
+        libcufft-${CUDA_DASHED} \
+        libcurand-${CUDA_DASHED} \
+        libcusolver-${CUDA_DASHED} \
+        libcusparse-${CUDA_DASHED} \
         curl \
-        # libcudnn=${CUDNN}+cuda${CUDA} \
+        libcudnn8=${CUDNN_VERSION}.*-1+${CUDA_VERSION} \
+        libcudnn8-dev=${CUDNN_VERSION}.*-1+${CUDA_VERSION} \
+        libcudnn8-samples=${CUDNN_VERSION}.*-1+${CUDA_VERSION} \
         libfreetype6-dev \
         libhdf5-serial-dev \
         libzmq3-dev \
@@ -58,29 +64,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # NOTE: libnvinfer uses cuda11.1 versions
 # RUN [[ "${ARCH}" = "ppc64le" ]] || { apt-get update && \
-#         apt-get install -y --no-install-recommends libnvinfer${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.0 \
-#         libnvinfer-plugin${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.0 \
+#         apt-get install -y --no-install-recommends \
+#         libnvinfer${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.2 \
+#         libnvinfer-plugin${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.2 \
+#         # libnvparser${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.2 \
+#         # libnvinfer-bin${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.2 \
+#         # libnvinfer-dev${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.2 \
+#         # libnvinfer-plugin-dev${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.2 \
+#         # libnvparsers-dev${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.2 \
+#         # libnvonnxparsers-dev${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda12.2 \
+#         # python3-libnvinfer=${LIBNVINFER}+cuda12.2 \
 #         && apt-get clean \
 #         && rm -rf /var/lib/apt/lists/*; }
-
-# RUN if [[ "${ARCH}" != "ppc64le" ]]; then \
-#     apt-get update && \
-#     apt-get install -y wget gnupg && \
-#     wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvidia-machine-learning-repo-ubuntu2204_1.0.0-1_amd64.deb && \
-#     dpkg -i nvidia-machine-learning-repo-ubuntu2204_1.0.0-1_amd64.deb && \
-#     apt-get update && \
-#     apt-get install -y --no-install-recommends \
-#         libnvinfer9 libnvinfer-plugin9 libnvinfer-dev libnvinfer-plugin-dev && \
-#     rm -rf /var/lib/apt/lists/*; \
-# fi
 
 # For CUDA profiling, TensorFlow requires CUPTI.
 ENV LD_LIBRARY_PATH=/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
 # Link the libcuda stub to the location where tensorflow is searching for it and reconfigure
 # dynamic linker run-time bindings
-RUN ln -s /usr/local/cuda-12.8/lib64/stubs/libcuda.so /usr/lib/x86_64-linux-gnu/libcuda.so.1 \
-    && echo "/usr/local/cuda-12.8/lib64/stubs" > /etc/ld.so.conf.d/z-cuda-stubs.conf \
+RUN ln -s /usr/local/cuda-12.2/lib64/stubs/libcuda.so /usr/lib/x86_64-linux-gnu/libcuda.so.1 \
+    && echo "/usr/local/cuda-12.2/lib64/stubs" > /etc/ld.so.conf.d/z-cuda-stubs.conf \
     && ldconfig
 
 # See http://bugs.python.org/issue19846
@@ -95,7 +98,7 @@ RUN ln -s $(which python3) /usr/local/bin/python
 # Pin TF models official version
 RUN pip uninstall tensorflow -y
 RUN python -m pip install --upgrade pip && \
-    pip install tensorflow==2.15.1 tf-models-official==2.5.0 tensorflow_io==0.36.0 pyparsing==2.4.2 pycairo
+    pip install tensorflow[and-cuda]==2.15.0 tf-models-official==2.5.0 tensorflow_io==0.36.0 pyparsing==2.4.2 pycairo
 
 # RUN  
 WORKDIR /app
@@ -123,6 +126,8 @@ RUN cd /app/models/research/ && \
 protoc object_detection/protos/*.proto --python_out=. && \
 cp object_detection/packages/tf2/setup.py . && \
 python -m pip install .
+
+RUN pip install git+https://github.com/google-research/tf-slim.git
 
 # Install google cloud SDK
 RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcl && bash /tmp/gcl --install-dir=~/gcloud --disable-prompts
