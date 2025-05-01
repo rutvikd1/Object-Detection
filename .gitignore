@@ -1,10 +1,16 @@
 *.ipynb_checkpoints/
 __pycache__/
-*.py[cod]
 .devcontainer
+checkpoint
+*.data-00000-of-00001
+*.zip
 *.index
+ckpt*
 *.pb
+*.v2
+*.data
 *.deb
 *.tgz
 data/
+dataset/
 *.tar.gz
