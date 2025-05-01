@@ -2,8 +2,8 @@ import logging
 
 import tensorflow.compat.v1 as tf
 from object_detection.inputs import train_input
-# from object_detection.protos import input_reader_pb2
-# from object_detection.builders.dataset_builder import build as build_dataset
+from object_detection.utils.label_map_util import create_category_index_from_labelmap
+import pandas as pd
 from object_detection.utils.config_util import get_configs_from_pipeline_file
 
 
@@ -24,6 +24,8 @@ def get_dataset(tfrecord_path, label_map='label_map.pbtxt'):
 
 def parse_function(example):
     features = {
+        # 'image/format': tf.io.FixedLenFeature([], tf.string),
+        'image/filename': tf.io.FixedLenFeature([], tf.string),
         'image/encoded': tf.io.FixedLenFeature([], tf.string),
         'image/source_id': tf.io.FixedLenFeature([], tf.string),
         'image/height': tf.io.FixedLenFeature([], tf.int64),
@@ -38,6 +40,7 @@ def parse_function(example):
     return parsed_example
 
 def parse_tfrecord_fn(example):
+    
     
     image = tf.image.decode_jpeg(example['image/encoded'], channels=3)
     width = tf.cast(example['image/width'], tf.float32)
@@ -79,6 +82,44 @@ def get_train_input(config_path):
   # get the dataset
   dataset = train_input(train_config, train_input_config, configs['model'])
   return dataset
+
+def dataset_to_dataframe(dataset):
+  columns = ['filename', 'boxes','xmin', 'ymin', 'xmax', 'ymax', 'area', 'aspect_r' , 'labels']
+  category_index = {1 : 'car' , 2:  'truck' , 3 : 'bicycle', 4: 'pedestrian' }
+
+
+  data = pd.DataFrame(columns=columns) 
+  # try:
+  for j, raw_record in enumerate(dataset):
+      # print(f"processing {j}th record")
+      image_tensor, boxes_tensor, labels_tensor = parse_tfrecord_fn(raw_record)
+      boxes = boxes_tensor.numpy()
+      labels = labels_tensor.numpy()
+      for box, label in zip(boxes, labels):
+        width = raw_record['image/width'].numpy()
+        height = raw_record['image/height'].numpy()
+        ymin, xmin, ymax, xmax = box
+        ymin = ymin/height
+        xmin = xmin/width
+        ymax = ymax/height
+        xmax = xmax/width
+        area = (xmax - xmin) * (ymax - ymin)
+        aspect_r = (xmax - xmin) / (ymax - ymin)
+        data.loc[len(data)] = {
+             "filename": raw_record['image/filename'].numpy().decode('utf-8'),
+             "boxes": box,
+             "xmin": xmin,
+             "ymin": ymin,
+             "xmax": xmax,
+             "ymax": ymax,
+             "area": area,
+             "aspect_r": aspect_r,
+             "labels": category_index[label]
+         }
+
+  # except 'UnknownError':
+  #   print("this one had a problem")
+  return data
 
 
 def int64_feature(value):

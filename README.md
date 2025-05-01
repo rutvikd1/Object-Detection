@@ -21,5 +21,9 @@ To create and run the container a shell script is provided. This automatically m
 
 For this project, the images from the forward facing camera of the dataset are utilized which contain different driving scenarios. A few examples of images used are shown below:
 
+# Class distribution
+
+The following diagram presents the category distribution of 
 
 This project performs 2D object detection on nuimages dataset from nuScenes. Implementing a SSD architecture with a Resnet50 backbone
+
