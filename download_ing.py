@@ -5,6 +5,7 @@ import subprocess
 
 import ray
 import tensorflow.compat.v1 as tf
+import sys
 from PIL import Image
 from psutil import cpu_count
 from nuimages import NuImages
@@ -171,10 +172,11 @@ def get_file_name(nuim,token):
     return local_path
 
 
-# @ray.remote
-def download_and_process(nuim, token):
+@ray.remote
+def download_and_process(token, **kwargs):
     logger = get_module_logger(__name__)
     # need to re-import the logger because of multiprocesing
+    nuim = NuImages(dataroot=kwargs["data_dir"], version=kwargs["version"], verbose=kwargs['verbose'], lazy=kwargs['lazy'])
     local_path = get_file_name(nuim,token)
     process_tfr(nuim, token,local_path)
 
@@ -182,8 +184,7 @@ def download_and_process(nuim, token):
     # logger.info(f'Deleting {local_path}')
     # os.remove(local_path)
 
-
-def get_sample_data_tokens(nuim, camera):
+def get_sample_data_tokens(nuim, camera, size=8):
     """
     Get the tokens for a specific camera
 
@@ -200,9 +201,9 @@ def get_sample_data_tokens(nuim, camera):
         curr_sample_data_token = nuim.sample_data[j]['token']
         if nuim.shortcut('sample_data', 'sensor',curr_sample_data_token)['channel'] == camera and nuim.sample_data[j]['is_key_frame'] == True:
             front_sample_data_tokens.append(curr_sample_data_token)
+        if len(front_sample_data_tokens) >= size:
+            break
     return front_sample_data_tokens
-
-
 
 if __name__ == "__main__":
     """
@@ -236,22 +237,28 @@ if __name__ == "__main__":
     
     parser.add_argument('--size', required=False, default=8, type=int,
                         help='Number of images to process')
+    
+    parser.add_argument('--purpose', required=False, default="train", type=str,
+                        help='Purpose of the dataset (e.g. train, val, test)')
         
     args = parser.parse_args()
     data_dir = args.data_dir
     size = args.size
+    version = args.version
     camera = args.camera
+    args = parser.parse_args()
 
-    nuim = NuImages(dataroot=args.data_dir, version=args.version, verbose=True, lazy=True)
+    nuim = NuImages(dataroot=args.data_dir, version=args.version, verbose=args.verbose, lazy=args.lazy)
 
-    tokens = get_sample_data_tokens(nuim, camera=camera)
+    tokens = get_sample_data_tokens(nuim, camera=camera, size=size)
 
-    logger.info(f' {len(tokens[:size])} images to process. Be patient, this will take a long time.')
+    logger.info(f' {len(tokens)} images to process. Be patient, this will take a long time.')
 
-    for k in range(size):
-      download_and_process(nuim,tokens[k])
+    ray.init(num_cpus=cpu_count())
 
-    # init ray
-    # ray.init(num_cpus=cpu_count())
-    # workers = [download_and_process.remote(nuim, fn) for fn in tokens[:size]]
-    # _ = ray.get(workers)
+    tasks = [download_and_process.remote(token, **vars(args)) for token in tokens]
+    
+    ray.get(tasks)
+    # for k in range(size):
+    #   download_and_process(nuim,tokens[k])
+    logger.info(f'Finished processing {size} images.')
