@@ -84,7 +84,7 @@ def get_train_input(config_path):
   return dataset
 
 def dataset_to_dataframe(dataset):
-  columns = ['filename', 'boxes','xmin', 'ymin', 'xmax', 'ymax', 'area', 'aspect_r' , 'labels']
+  columns = ['filename', 'boxes','xmin', 'ymin', 'xmax', 'ymax','box_width', 'box_height',  'area', 'aspect_r' , 'labels']
   category_index = {1 : 'car' , 2:  'truck' , 3 : 'bicycle', 4: 'pedestrian' }
 
 
@@ -95,16 +95,20 @@ def dataset_to_dataframe(dataset):
       image_tensor, boxes_tensor, labels_tensor = parse_tfrecord_fn(raw_record)
       boxes = boxes_tensor.numpy()
       labels = labels_tensor.numpy()
+      width = raw_record['image/width'].numpy()
+      height = raw_record['image/height'].numpy()
       for box, label in zip(boxes, labels):
-        width = raw_record['image/width'].numpy()
-        height = raw_record['image/height'].numpy()
+        
         ymin, xmin, ymax, xmax = box
         ymin = ymin/height
         xmin = xmin/width
         ymax = ymax/height
         xmax = xmax/width
-        area = (xmax - xmin) * (ymax - ymin)
-        aspect_r = (xmax - xmin) / (ymax - ymin)
+        box_width = xmax - xmin
+        box_height = ymax - ymin
+        area = box_width * box_height
+        aspect_r = box_width / box_height
+        
         data.loc[len(data)] = {
              "filename": raw_record['image/filename'].numpy().decode('utf-8'),
              "boxes": box,
@@ -113,6 +117,8 @@ def dataset_to_dataframe(dataset):
              "xmax": xmax,
              "ymax": ymax,
              "area": area,
+             "box_width": box_width,
+             "box_height": box_height,
              "aspect_r": aspect_r,
              "labels": category_index[label]
          }
