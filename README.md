@@ -3,8 +3,8 @@
 Object detection is a essential task for autonomous vehicles. This repository presents code and configurations for detecting objects from a vehicles perspective in urban environement utilizing the [Tensorflow Object Detection API](https://github.com/tensorflow/models/blob/master/research/object_detection/README.md). The object detection model is trained on 2D boding boxes from the nuScenes dataset for 4 categories: vehicle, pedestrian, truck and bicycle.
 
 <p align="center">
-  <img src="/experiments/ssd-7layers/inference/output.gif" width="45%" />
-  <img src="/experiments/ssd-7layers/inference/output-2.gif" width="45%" />
+  <img src="/experiments/ssd-7layers/inference/output.gif" width="40%" />
+  <img src="/experiments/ssd-7layers/inference/output-2.gif" width="40%" />
 </p>
 
 <!-- <div align='center'>
