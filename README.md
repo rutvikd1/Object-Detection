@@ -2,6 +2,16 @@
 
 Object detection is a essential task for autonomous vehicles. This repository presents code and configurations for detecting objects from a vehicles perspective in urban environement utilizing the [Tensorflow Object Detection API](https://github.com/tensorflow/models/blob/master/research/object_detection/README.md). The object detection model is trained on 2D boding boxes from the nuScenes dataset for 4 categories: vehicle, pedestrian, truck and bicycle.
 
+<p align="center">
+  <img src="/experiments/ssd-7layers/inference/output.gif" width="45%" />
+  <img src="/experiments/ssd-7layers/inference/output-2.gif" width="45%" />
+</p>
+
+<!-- <div align='center'>
+    <img src = >
+    <img src = >
+</div> -->
+
 # Setup
 
 The provided Dockerfile allows a hassle free setup of the environemnt. 
@@ -42,8 +52,9 @@ It could be seen that the area covered by most of the bounding boxes is 0.04.
 The image above represents the frequency of aspect ratio of the bouding boxes. The aspect ratios are all below 2.0, and hence this value was used for anchor box values in the training config. 
 
 # Positional distribution of object.
-    The positional distributuion of object in the dataser is analyzed using a heatmap for all four categories.
+The positional distributuion of object in the dataser is analyzed using a heatmap for all four categories.
 ![image](/images/heatmap.png)
+
 
 This project performs 2D object detection on nuimages dataset from nuScenes. Implementing a SSD architecture with a Resnet50 backbone
 
