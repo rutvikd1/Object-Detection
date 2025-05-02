@@ -1,13 +1,13 @@
 # Object-Detection
 
-Object detection is a essential task for autonomous vehicles. This repository presents code and configurations for detecting objects from a vehicles perspective in urban environement utilizing the [Tensorflow Object Detection API](https://github.com/tensorflow/models/blob/master/research/object_detection/README.md). The object detection model is trained on 2D boding boxes from the nuScenes dataset for 4 categories: vehicle, pedestrian, truck and bicycle.
+Object detection is a essential task for autonomous vehicles. This repository presents code and configurations for detecting objects from a vehicles perspective in urban environement utilizing the [Tensorflow Object Detection API](https://github.com/tensorflow/models/blob/master/research/object_detection/README.md). The object detection model is trained on 2D boding boxes from the nuScenes dataset for 4 categories: vehicle, pedestrian, truck and bicycle. 
 
-<!-- | ![GIF 1](/experiments/ssd-7layers/inference/output.gif) | ![GIF 2](/experiments/ssd-7layers/inference/output-2.gif) |
-|:--------------------------:|:--------------------------:|
-| Caption 1                 | Caption 2                 | -->
+Here, utilizing the pretrained models from [Tensorlfow Detection Models Zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md) an SSD architecture with Resnet50 backbone is utilized.
+
 
 <div align="center">
-  <img src="/experiments/ssd-7layers/inference/output.gif" width="40%" /> | <img src="/experiments/ssd-7layers/inference/output-2.gif" width="40%" />
+  <img src="/experiments/ssd-7layers/inference/output.gif" width="45%" /> 
+  <img src="/experiments/ssd-7layers/inference/output-2.gif" width="45%" />
 </div>
 
 <!-- <div align='center'>
@@ -33,6 +33,9 @@ To create and run the container a shell script is provided. This automatically m
 # About the dataset
 
 For this project, the images from the forward facing camera of the dataset are utilized which contain different driving scenarios. A few examples of images used are shown below:
+<!-- <div>
+    <img src="/images/gt_boxes.png" width="45%"/>
+</div> -->
 ![image](/images/gt_boxes.png)
 
 # Class distribution
@@ -58,6 +61,4 @@ The image above represents the frequency of aspect ratio of the bouding boxes. T
 The positional distributuion of object in the dataser is analyzed using a heatmap for all four categories.
 ![image](/images/heatmap.png)
 
-
-This project performs 2D object detection on nuimages dataset from nuScenes. Implementing a SSD architecture with a Resnet50 backbone
 
