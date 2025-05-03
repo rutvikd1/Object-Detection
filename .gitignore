@@ -13,4 +13,5 @@ ckpt*
 *.tgz
 data/
 dataset/
+nuimages/
 *.tar.gz

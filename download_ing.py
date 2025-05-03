@@ -4,16 +4,18 @@ import os
 import subprocess
 
 import ray
+from ray.experimental import tqdm_ray
+from tqdm import tqdm
 import tensorflow.compat.v1 as tf
 import sys
 from PIL import Image
 from psutil import cpu_count
 from nuimages import NuImages
 import numpy as np
-
 from utils import (get_module_logger, int64_feature, int64_list_feature,
                 bytes_list_feature, bytes_feature, float_list_feature)  
 
+remote_tqdm = ray.remote(tqdm_ray.tqdm)
 NAME_MAPPING = {
     'movable_object.barrier': 'barrier',
     'vehicle.bicycle': 'bicycle',
@@ -172,7 +174,7 @@ def get_file_name(nuim,token):
     return local_path
 
 
-@ray.remote
+# @ray.remote
 def download_and_process(token, **kwargs):
     logger = get_module_logger(__name__)
     # need to re-import the logger because of multiprocesing
@@ -253,12 +255,13 @@ if __name__ == "__main__":
     tokens = get_sample_data_tokens(nuim, camera=camera, size=size)
 
     logger.info(f' {len(tokens)} images to process. Be patient, this will take a long time.')
-
-    ray.init(num_cpus=cpu_count())
-
-    tasks = [download_and_process.remote(token, **vars(args)) for token in tokens]
+    # bar = remote_tqdm.remote(total=len(tokens), desc='Processing images', unit='image')
     
-    ray.get(tasks)
-    # for k in range(size):
-    #   download_and_process(nuim,tokens[k])
+    # ray.init(num_cpus=cpu_count())
+    # tasks = [download_and_process.remote(token, **vars(args)) for token in tqdm(tokens)]
+    # ray.get(tasks)
+
+
+    for k in tqdm(range(size)):
+      download_and_process(tokens[k], **vars(args))
     logger.info(f'Finished processing {size} images.')
